@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Settings, Eye, EyeOff, Zap, Shield, Lock, Mail } from 'lucide-react';
+import { loginUser } from '../services/api';
 
 export function Login({ onNavigate, onLogin }) {
   const [email, setEmail] = useState('');
@@ -16,10 +17,14 @@ export function Login({ onNavigate, onLogin }) {
       return;
     }
     setIsLoading(true);
-    // Simulate authentication
-    await new Promise((r) => setTimeout(r, 1200));
-    setIsLoading(false);
-    onLogin({ email, name: email.split('@')[0] });
+    try {
+      const userData = await loginUser(email, password);
+      onLogin(userData); // Pass full user object (includes token) to App
+    } catch (err) {
+      setError(err.message || 'Login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

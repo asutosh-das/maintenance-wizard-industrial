@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Settings, Eye, EyeOff, Zap, Shield, Lock, Mail, User, Building2, CheckCircle2 } from 'lucide-react';
+import { registerUser } from '../services/api';
 
 const roles = ['Maintenance Technician', 'Operations Engineer', 'Fleet Manager', 'Quality Inspector', 'System Administrator'];
 
@@ -12,6 +13,7 @@ export function Signup({ onNavigate }) {
     name: '', email: '', password: '', confirm: '', role: '', facility: '',
   });
   const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState('');
 
   const update = (field, val) => setForm((f) => ({ ...f, [field]: val }));
 
@@ -40,10 +42,22 @@ export function Signup({ onNavigate }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateStep2()) return;
+    setServerError('');
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 1400));
-    setIsLoading(false);
-    setDone(true);
+    try {
+      await registerUser({
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        role: form.role,
+        facility: form.facility,
+      });
+      setDone(true);
+    } catch (err) {
+      setServerError(err.message || 'Registration failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (done) {
@@ -268,6 +282,14 @@ export function Signup({ onNavigate }) {
                   Your account will be reviewed by a system administrator before activation. You'll receive an email notification once approved.
                 </p>
               </div>
+
+              {/* Server error */}
+              {serverError && (
+                <div className="bg-critical/10 border border-critical/30 rounded-lg px-4 py-3 text-sm text-critical flex items-center gap-2">
+                  <Zap className="w-4 h-4 shrink-0" />
+                  {serverError}
+                </div>
+              )}
 
               <div className="flex gap-3">
                 <button type="button" onClick={() => setStep(1)} className="flex-1 bg-surface-hover hover:bg-border-subtle text-text-main font-semibold py-3 rounded-lg transition-all duration-200 border border-border-subtle">

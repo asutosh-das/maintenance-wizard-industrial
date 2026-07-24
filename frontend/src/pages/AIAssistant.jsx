@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Paperclip, Bot, FileText, History as HistoryIcon, Activity, Eye, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { sendAIMessage } from '../services/api';
 
 export function AIAssistant() {
   const [messages, setMessages] = useState([
@@ -23,7 +24,7 @@ export function AIAssistant() {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
 
     const userMsg = {
@@ -34,33 +35,35 @@ export function AIAssistant() {
     };
 
     setMessages(prev => [...prev, userMsg]);
+    const currentInput = input;
     setInput('');
     setIsTyping(true);
 
-    const lowercaseInput = input.toLowerCase();
-    
-    setTimeout(() => {
-       setIsTyping(false);
-       
-       let aiResponse = {
-          id: Date.now() + 1,
-          sender: 'ai',
-          time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' UTC',
-          isAnomaly: false,
-          text: "I've logged that query. Let me know if you need me to pull specific telemetry data or maintenance logs."
-       };
+    try {
+      // Get JWT token from localStorage
+      const savedUser = localStorage.getItem('mw_user');
+      const token = savedUser ? JSON.parse(savedUser).token : null;
 
-       if (lowercaseInput.includes('pump') || lowercaseInput.includes('vibration') || lowercaseInput.includes('anomaly') || lowercaseInput.includes('p-102')) {
-          aiResponse.isAnomaly = true;
-          aiResponse.text = "I've analyzed the vibration anomaly on Pump P-102.";
-       } else if (lowercaseInput.includes('schedule') || lowercaseInput.includes('maintenance')) {
-          aiResponse.text = "Based on the maintenance schedule, Sector 4 has planned downtime this weekend. All primary milling stations are due for lubrication checks.";
-       } else if (lowercaseInput.includes('report') || lowercaseInput.includes('export')) {
-          aiResponse.text = "I can generate a shift report for you. Would you like it in PDF or CSV format?";
-       }
+      const { reply } = await sendAIMessage(currentInput, token);
 
-       setMessages(prev => [...prev, aiResponse]);
-    }, 1500); // 1.5s typing delay
+      setMessages(prev => [...prev, {
+        id: Date.now() + 1,
+        sender: 'ai',
+        text: reply,
+        time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' UTC',
+        isAnomaly: false,
+      }]);
+    } catch (err) {
+      setMessages(prev => [...prev, {
+        id: Date.now() + 1,
+        sender: 'ai',
+        text: `⚠️ Error: ${err.message || 'Failed to get AI response. Please try again.'}`,
+        time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' UTC',
+        isAnomaly: false,
+      }]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const handleKeyDown = (e) => {
