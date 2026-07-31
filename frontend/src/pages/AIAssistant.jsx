@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Paperclip, Bot, FileText, History as HistoryIcon, Activity, Eye, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { sendAIMessage } from '../services/api';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export function AIAssistant() {
   const [messages, setMessages] = useState([
@@ -40,11 +42,12 @@ export function AIAssistant() {
     setIsTyping(true);
 
     try {
-      // Get JWT token from localStorage
-      const savedUser = localStorage.getItem('mw_user');
-      const token = savedUser ? JSON.parse(savedUser).token : null;
+      // Pass the previous messages (excluding anomalies/system messages) as history
+      const historyForAPI = messages
+        .filter(m => !m.isAnomaly)
+        .map(m => ({ sender: m.sender, text: m.text }));
 
-      const { reply } = await sendAIMessage(currentInput, token);
+      const { reply } = await sendAIMessage(currentInput, historyForAPI);
 
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
@@ -147,7 +150,41 @@ export function AIAssistant() {
                              </div>
                           </div>
                        ) : (
-                          <div className="text-[14px] text-text-main whitespace-pre-wrap">{msg.text}</div>
+                          <div className="text-[14px] text-text-main markdown-body">
+                             <ReactMarkdown 
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                   h1: ({node, ...props}) => <h1 className="text-xl font-bold mt-5 mb-3 text-text-main border-b border-border-subtle pb-2" {...props} />,
+                                   h2: ({node, ...props}) => <h2 className="text-lg font-bold mt-5 mb-2 text-primary" {...props} />,
+                                   h3: ({node, ...props}) => <h3 className="text-[15px] font-bold mt-4 mb-2 text-text-main" {...props} />,
+                                   p: ({node, ...props}) => <p className="mb-3 leading-relaxed" {...props} />,
+                                   ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-4 space-y-1.5 marker:text-primary" {...props} />,
+                                   ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-4 space-y-1.5 marker:text-primary font-mono text-text-muted" {...props} />,
+                                   li: ({node, ...props}) => <li className="text-text-muted" {...props} />,
+                                   strong: ({node, ...props}) => <strong className="font-semibold text-text-main" {...props} />,
+                                   table: ({node, ...props}) => <div className="overflow-x-auto mb-5 rounded-lg border border-border-subtle"><table className="w-full text-left border-collapse text-[13px]" {...props} /></div>,
+                                   thead: ({node, ...props}) => <thead className="bg-background/80 border-b border-border-subtle" {...props} />,
+                                   th: ({node, ...props}) => <th className="p-3 font-semibold uppercase tracking-wider text-[11px] text-text-muted" {...props} />,
+                                   td: ({node, ...props}) => <td className="p-3 border-b border-border-subtle text-text-main" {...props} />,
+                                   blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-info pl-4 py-2 mb-4 bg-info/5 italic text-text-muted rounded-r-lg" {...props} />,
+                                   code: ({node, inline, className, children, ...props}) => {
+                                      const match = /language-(\w+)/.exec(className || '');
+                                      return inline ? (
+                                         <code className="bg-background border border-border-subtle rounded-md px-1.5 py-0.5 font-mono text-[12px] text-primary" {...props}>{children}</code>
+                                      ) : (
+                                         <div className="relative mb-4">
+                                            <div className="absolute top-0 right-0 bg-surface px-2 py-1 text-[10px] font-mono text-text-muted rounded-bl-lg border-b border-l border-border-subtle">{match?.[1] || 'code'}</div>
+                                            <pre className="bg-background border border-border-subtle p-4 pt-8 rounded-lg overflow-x-auto"><code className="font-mono text-[12px] text-text-main" {...props}>{children}</code></pre>
+                                         </div>
+                                      );
+                                   },
+                                   hr: ({node, ...props}) => <hr className="border-border-subtle my-5 border-dashed" {...props} />,
+                                   a: ({node, ...props}) => <a className="text-primary hover:underline" {...props} />
+                                }}
+                             >
+                                {msg.text}
+                             </ReactMarkdown>
+                          </div>
                        )}
 
                        {/* Feedback Controls */}

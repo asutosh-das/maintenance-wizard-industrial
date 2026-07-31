@@ -44,6 +44,11 @@ export function Profile({ user, onLogout, onNavigate }) {
   const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
   const handleSave = async () => {
+    // Save to local storage for persistence across reloads
+    const updatedUser = { ...user, name: form.name, email: form.email, phone: form.phone };
+    localStorage.setItem('mw_user', JSON.stringify(updatedUser));
+    // We would also call an API here in a real app, e.g., await updateUserProfile(updatedUser)
+    
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
     setEditMode(false);

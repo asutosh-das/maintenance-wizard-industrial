@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Activity, Copy, AlertCircle, Clock, History as HistoryIcon, Download, Search } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip } from 'recharts';
 
@@ -93,17 +93,7 @@ export function DataQuality({ globalSearchQuery }) {
                </div>
                
                <div className="flex-1 min-h-[250px] relative mt-2">
-                  <div className="absolute inset-0 grid grid-cols-12 grid-rows-6 gap-1.5 pl-8 pb-6">
-                     {/* Generate some dummy heatmap cells */}
-                     {Array.from({ length: 72 }).map((_, i) => {
-                        const rand = Math.random();
-                        let bg = 'bg-success';
-                        if (rand > 0.8) bg = 'bg-warning';
-                        if (rand > 0.95) bg = 'bg-critical';
-                        if (rand < 0.1) bg = 'bg-border-subtle';
-                        return <div key={i} className={`${bg} rounded-[2px] opacity-80 hover:opacity-100 transition-opacity cursor-crosshair border border-background hover:border-white/20`} />
-                     })}
-                  </div>
+                  <HeatmapGrid />
                   <div className="absolute -left-2 top-1/2 -translate-y-1/2 -rotate-90 pointer-events-none">
                      <span className="text-[10px] text-text-muted uppercase font-bold tracking-widest">Areas</span>
                   </div>
@@ -305,4 +295,28 @@ function RejectedRow({ row, field, rule, ruleColor, raw, reason, file, rawItalic
          <td className="p-4"><a href="#" className="text-primary hover:underline font-mono text-[12px]">{file}</a></td>
       </tr>
    )
+}
+
+function HeatmapGrid() {
+   // Generate stable random values for the heatmap to prevent flickering
+   const cells = useMemo(() => {
+      return Array.from({ length: 72 }).map((_, i) => {
+         // Simple seeded random to keep values stable across renders
+         const x = Math.sin(i + 1) * 10000;
+         const rand = x - Math.floor(x);
+         
+         let bg = 'bg-success';
+         if (rand > 0.8) bg = 'bg-warning';
+         if (rand > 0.95) bg = 'bg-critical';
+         if (rand < 0.1) bg = 'bg-border-subtle';
+         
+         return <div key={i} className={`${bg} rounded-[2px] opacity-80 hover:opacity-100 transition-opacity cursor-crosshair border border-background hover:border-white/20`} />
+      });
+   }, []);
+
+   return (
+      <div className="absolute inset-0 grid grid-cols-12 grid-rows-6 gap-1.5 pl-8 pb-6">
+         {cells}
+      </div>
+   );
 }
