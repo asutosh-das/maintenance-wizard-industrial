@@ -1,7 +1,7 @@
 // Central API service — all backend calls live here.
 // Vite proxy forwards /api/* requests to http://localhost:5000
 
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 /** Helper: parse response or throw with server error message */
 async function handleResponse(res) {
