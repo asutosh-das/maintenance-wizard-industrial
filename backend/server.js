@@ -16,22 +16,8 @@ const aiRoutes = require('./routes/aiRoutes');
 const app = express();
 
 // 4. Setup Middleware
-// CORS — allow the frontend origin (Vite dev server + production origin)
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:5173',
-  process.env.FRONTEND_ORIGIN, // set this in production
-].filter(Boolean);
-
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (curl, mobile apps, Postman)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      return callback(null, true);
-    }
-    callback(new Error('Not allowed by CORS'));
-  },
+  origin: true, // Automatically reflect the request origin to allow all domains
   credentials: true,
 }));
 
